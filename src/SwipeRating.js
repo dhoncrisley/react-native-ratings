@@ -1,12 +1,12 @@
 import React, { Component } from 'react';
-import times from 'lodash/times';
 import PropTypes from 'prop-types';
 
-import {
-  View, Text, Animated, PanResponder, Image,
-  StyleSheet, Platform
+import { 
+  View, Text, Animated, PanResponder, Image, 
+  StyleSheet, Platform, ViewPropTypes
 } from 'react-native';
-
+import Icon from 'react-native-vector-icons/FontAwesome'
+import MaskedView from '@react-native-community/masked-view'
 // RATING IMAGES WITH STATIC BACKGROUND COLOR (white)
 const STAR_IMAGE = require('./images/star.png');
 const HEART_IMAGE = require('./images/heart.png');
@@ -43,8 +43,8 @@ export default class SwipeRating extends Component {
     ratingColor: '#f1c40f',
     ratingBackgroundColor: 'white',
     ratingCount: 5,
-    showReadOnlyText: true,
     imageSize: 40,
+    onFinishRating: () => console.log('Attach a onFinishRating function here.'),
     minValue: 0
   };
 
@@ -63,9 +63,7 @@ export default class SwipeRating extends Component {
       onPanResponderMove: (event, gesture) => {
         const newPosition = new Animated.ValueXY();
         newPosition.setValue({ x: gesture.dx, y: 0 });
-        if (this.state.isComponentMounted) {
-          this.setState({position: newPosition, value: gesture.dx});
-        }
+        this.setState({ position: newPosition, value: gesture.dx });
       },
       onPanResponderRelease: event => {
         const rating = this.getCurrentRating(this.state.value);
@@ -74,12 +72,12 @@ export default class SwipeRating extends Component {
             // 'round up' to the nearest rating image
             this.setCurrentRating(rating);
           }
-          if (typeof onFinishRating === 'function') onFinishRating(rating);
+          onFinishRating(rating);
         }
       }
     });
 
-    this.state = { panResponder, position, display: false, isComponentMounted: false };
+    this.state = { panResponder, position, display: false };
   }
 
   async componentDidMount() {
@@ -89,7 +87,7 @@ export default class SwipeRating extends Component {
       const ROCKET_IMAGE = await require('./images/rocket.png');
       const BELL_IMAGE = await require('./images/bell.png');
 
-      this.setState({ display: true, isComponentMounted: true });
+      this.setState({ display: true })
     } catch(err) {
       console.log(err)
     }
@@ -150,16 +148,18 @@ export default class SwipeRating extends Component {
       height: width ? imageSize : 0
     };
   }
+  
+  renderRatings(props) {
+    const { imageSize, ratingCount } = this.props;
 
-  renderRatings() {
-    const { imageSize, ratingCount, type, tintColor } = this.props;
-    const source = TYPES[type].source;
 
-    return times(ratingCount, index => (
-      <View key={index} style={styles.starContainer}>
-        <Image source={source} style={{ width: imageSize, height: imageSize, tintColor }} />
+    return <View /* {...props} */ style={styles.starContainer}>
+    {Array.from(Array(ratingCount).keys()).map((_,i) => (
+        <Icon key={i}  name="star" size={imageSize}/>
+      
+      
+    ))}
       </View>
-    ));
   }
 
   getCurrentRating(value) {
@@ -203,13 +203,11 @@ export default class SwipeRating extends Component {
 
     const newPosition = new Animated.ValueXY();
     newPosition.setValue({ x: value, y: 0 });
-    if (this.state.isComponentMounted) {
-      this.setState({position: newPosition, value});
-    }
+    this.setState({ position: newPosition, value });
   }
 
   displayCurrentRating() {
-    const { ratingCount, type, readonly, showReadOnlyText, ratingTextColor } = this.props;
+    const { ratingCount, type, readonly, ratingTextColor } = this.props;
     const color = ratingTextColor || TYPES[type].color;
 
     return (
@@ -219,7 +217,7 @@ export default class SwipeRating extends Component {
           <Text style={[styles.currentRatingText, { color }]}>{this.getCurrentRating(this.state.value)}</Text>
           <Text style={[styles.maxRatingText, { color }]}>/{ratingCount}</Text>
         </View>
-        <View>{readonly && showReadOnlyText && <Text style={[styles.readonlyLabel, { color }]}>(readonly)</Text>}</View>
+        <View>{readonly && <Text style={[styles.readonlyLabel, { color }]}>(readonly)</Text>}</View>
       </View>
     );
   }
@@ -240,22 +238,26 @@ export default class SwipeRating extends Component {
       this.state.display ?
       <View pointerEvents={readonly ? 'none' : 'auto'} style={style}>
         {showRating && this.displayCurrentRating()}
-        <View style={styles.starsWrapper} {...this.state.panResponder.panHandlers}>
-          <View style={styles.starsInsideWrapper}>
+        <View {...this.state.panResponder.panHandlers}>
+
+        <MaskedView
+          style={{flexDirection: 'row', }}
+          maskElement={
+            <View style={{backgroundColor: 'transparent',alignItems: 'center'}}>
+            {this.renderRatings()}
+            </View>
+          }
+          >
             <Animated.View style={this.getPrimaryViewStyle()} />
             <Animated.View style={this.getSecondaryViewStyle()} />
-          </View>
-          {this.renderRatings()}
+        </MaskedView>
         </View>
+    
+   
       </View> :
       null
     );
   }
-
-  componentWillUnmount() {
-    this.setState({ isComponentMounted: false });
-  }
-
 }
 
 const styles = StyleSheet.create({
@@ -263,6 +265,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  starContainer:{
+    zIndex:10,
+    backgroundColor:"transparent",
+    flexDirection: 'row',
+    position: 'absolute', 
+    // top: 0,
+    // left: 0,
+    // right: 0,
+    // bottom: 0, 
+    
   },
   starsInsideWrapper: {
     position: 'absolute',
@@ -328,7 +341,7 @@ const fractionsType = (props, propName, componentName) => {
 
 SwipeRating.propTypes = {
   type: PropTypes.string,
-  ratingImage: PropTypes.node,
+  ratingImage: Image.propTypes.source,
   ratingColor: PropTypes.string,
   ratingBackgroundColor: PropTypes.string,
   ratingCount: PropTypes.number,
@@ -337,9 +350,8 @@ SwipeRating.propTypes = {
   onStartRating: PropTypes.func,
   onFinishRating: PropTypes.func,
   showRating: PropTypes.bool,
-  style: PropTypes.object,
+  style: ViewPropTypes.style,
   readonly: PropTypes.bool,
-  showReadOnlyText: PropTypes.bool,
   startingValue: PropTypes.number,
   fractions: fractionsType,
   minValue: PropTypes.number
