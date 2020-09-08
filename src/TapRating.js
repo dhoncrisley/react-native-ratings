@@ -1,11 +1,9 @@
-import _ from 'lodash';
+import React, { Component } from "react";
+import PropTypes from "prop-types";
 
-import React, { Component } from 'react';
-import PropTypes from 'prop-types';
+import { StyleSheet, Text, View } from "react-native";
 
-import { StyleSheet, Text, View } from 'react-native';
-
-import Star from './components/Star'
+import Star from "./components/Star";
 
 export default class TapRating extends Component {
   static defaultProps = {
@@ -13,8 +11,8 @@ export default class TapRating extends Component {
     reviews: ["Terrible", "Bad", "Okay", "Good", "Great"],
     count: 5,
     showRating: true,
-    reviewColor: 'rgba(230, 196, 46, 1)',
-    reviewSize: 25
+    reviewColor: "rgba(230, 196, 46, 1)",
+    reviewSize: 25,
   };
 
   static getDerivedStateFromProps(nextProps, prevState) {
@@ -23,71 +21,74 @@ export default class TapRating extends Component {
     if (defaultRating !== prevState.defaultRating) {
       return {
         position: defaultRating,
-        defaultRating
-      }
+        defaultRating,
+      };
     }
     return null;
   }
 
   constructor() {
-    super()
+    super();
 
     this.state = {
-      position: 5
-    }
+      position: 5,
+    };
   }
 
   componentDidMount() {
-    const { defaultRating } = this.props
+    const { defaultRating } = this.props;
 
-    this.setState({ position: defaultRating })
+    this.setState({ position: defaultRating });
   }
 
-  renderStars(rating_array) {
-    return _.map(rating_array, (star, index) => {
-      return star
-    })
+  renderStars(rating_array = []) {
+    return [...rating_array].map((star, index) => {
+      return star;
+    });
   }
 
   starSelectedInPosition(position) {
-    const { onFinishRating } = this.props
+    const { onFinishRating } = this.props;
 
-    if (typeof onFinishRating === 'function') onFinishRating(position);
+    if (typeof onFinishRating === "function") onFinishRating(position);
 
-    this.setState({ position: position })
+    this.setState({ position: position });
   }
 
   render() {
-    const { position } = this.state
-    const { count, reviews, showRating, reviewColor, reviewSize } = this.props
-    const rating_array = []
-    const starContainerStyle = [styles.starContainer]
+    const { position } = this.state;
+    const { count, reviews, showRating, reviewColor, reviewSize } = this.props;
+
+    const starContainerStyle = [styles.starContainer];
 
     if (this.props.starContainerStyle) {
-        starContainerStyle.push(this.props.starContainerStyle);
+      starContainerStyle.push(this.props.starContainerStyle);
     }
-
-    _.times(count, index => {
-      rating_array.push(
-        <Star
-          key={index}
-          position={index + 1}
-          starSelectedInPosition={this.starSelectedInPosition.bind(this)}
-          fill={position >= index + 1}
-          {...this.props}
-        />
-      )
-    })
 
     return (
       <View style={styles.ratingContainer}>
-        { showRating &&
-          <Text style={[styles.reviewText, {fontSize: reviewSize, color: reviewColor}]}>
+        {showRating && (
+          <Text
+            style={[
+              styles.reviewText,
+              { fontSize: reviewSize, color: reviewColor },
+            ]}
+          >
             {reviews[position - 1]}
           </Text>
-        }
+        )}
         <View style={starContainerStyle}>
-          {this.renderStars(rating_array)}
+          {Array.from(new Array(count).keys()).map((_, index) => {
+            return (
+              <Star
+                key={index}
+                position={index + 1}
+                starSelectedInPosition={this.starSelectedInPosition.bind(this)}
+                fill={position >= index + 1}
+                {...this.props}
+              />
+            );
+          })}
         </View>
       </View>
     );
@@ -96,18 +97,18 @@ export default class TapRating extends Component {
 
 const styles = StyleSheet.create({
   ratingContainer: {
-    backgroundColor: 'transparent',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "transparent",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
   },
   reviewText: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     margin: 10,
   },
   starContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  }
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });
